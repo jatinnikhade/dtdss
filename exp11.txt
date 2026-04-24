@@ -1,0 +1,49 @@
+import pandas as pd
+import seaborn as sns
+import plotly.express as px
+import dash
+from dash import dcc, html
+from dash.dependencies import Input, Output
+
+# Load dataset
+data = pd.read_csv("house_prices.csv")
+print(data.head())
+
+# Seaborn plots
+sns.violinplot(x=data['OverallQual'], y=data['SalePrice'])
+sns.boxplot(x='Neighborhood', y='SalePrice', data=data)
+
+# Plotly interactive plots
+fig1 = px.scatter(data, x='GrLivArea', y='SalePrice', color='OverallQual')
+fig1.show()
+
+fig2 = px.histogram(data, x='SalePrice', nbins=50)
+fig2.show()
+
+# Dash app
+app = dash.Dash(_name_)
+
+app.layout = html.Div([
+    dcc.Dropdown(
+        id='neighborhood-dropdown',
+        options=[{'label': i, 'value': i} for i in data['Neighborhood'].unique()],
+        placeholder='Select a Neighborhood'
+    ),
+    dcc.Graph(id='price-distribution')
+])
+
+@app.callback(
+    Output('price-distribution', 'figure'),
+    Input('neighborhood-dropdown', 'value')
+)
+def update_graph(selected_neighborhood):
+    if selected_neighborhood is None:
+        filtered_data = data
+    else:
+        filtered_data = data[data['Neighborhood'] == selected_neighborhood]
+
+    fig = px.histogram(filtered_data, x='SalePrice', nbins=30)
+    return fig
+
+if _name_ == '_main_':
+    app.run_server(debug=True)
